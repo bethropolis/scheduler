@@ -19,20 +19,17 @@ jobs:
       #   with:
       #     version: 8
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+      - name: Install Bun.js
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: npm install
+        run: bun install
 
       - name: build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
         run: |
-          npm run build
+          bun run build
 
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v3
