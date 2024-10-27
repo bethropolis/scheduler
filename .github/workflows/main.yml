@@ -26,8 +26,6 @@ jobs:
         run: bun install
 
       - name: build
-        env:
-          BASE_PATH: '/${{ github.event.repository.name }}'
         run: |
           bun run build
 
