@@ -73,7 +73,7 @@
 	</div>
 	<div class="proc flex-1 h-4 bg-gray-200 rounded overflow-hidden hidden-sm">
 		<div
-			class={`h-full rounded transition-all duration-300 ease-in-out`}
+			class={`h-full rounded transition-all duration-100 ease-in-out`}
 			style="width: {progress}%; background-color: {process.color};"
 			class:is-current={isCurrentProcess && isRunning}
 		></div>

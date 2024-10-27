@@ -53,6 +53,7 @@
 	function calculateMetrics() {
 		let totalWaitTime = 0;
 		let totalTurnaroundTime = 0;
+		let totalResponseTime = 0;
 		let completed = 0;
 
 		processes.forEach((process) => {
@@ -61,25 +62,26 @@
 				// Wait time is the time between arrival and first execution
 				const waitTime = process.startTime - process.arrivalTime;
 				// Turnaround time is the time between arrival and completion
-				const turnaroundTime =
-					process.completed === process.burstTime
-						? process.startTime + process.burstTime - process.arrivalTime
-						: 0;
+				const turnaroundTime = process.startTime + process.burstTime - process.arrivalTime;
+				// Response time is the time between arrival and first response
+				const responseTime = process.startTime - process.arrivalTime;
 
 				totalWaitTime += Math.max(0, waitTime);
 				totalTurnaroundTime += Math.max(0, turnaroundTime);
+				totalResponseTime += Math.max(0, responseTime);
 			}
 		});
 
 		results = {
 			avgWaitTime: completed ? (totalWaitTime / completed).toFixed(2) : 0,
 			avgTurnaroundTime: completed ? (totalTurnaroundTime / completed).toFixed(2) : 0,
+			avgResponseTime: completed ? (totalResponseTime / completed).toFixed(2) : 0,
 			completedJobs: completed
 		};
 	}
 
     // Animation loop for the simulation
-    function animate() {
+    async function animate() {
         const now = Date.now();
         const deltaTime = (now - lastUpdateRef) / 1000;
         lastUpdateRef = now;
@@ -116,9 +118,9 @@
             currentProcess = getNextProcess(currentTime);
         }
 
-        calculateMetrics();
+        await calculateMetrics();
 
-        if (currentTime < maxTime() && isRunning) {
+        if (currentTime <= maxTime() && isRunning) {
             animationFrameRef = requestAnimationFrame(animate);
         } else {
             isRunning = false;

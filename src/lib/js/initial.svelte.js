@@ -5,7 +5,7 @@ export let processes = $state([
   {
     id: 1,
     arrivalTime: 0,
-    burstTime: 4,
+    burstTime: 5,
     completed: 0,
     color: "#3B82F6",
     startTime: null,
@@ -13,7 +13,7 @@ export let processes = $state([
   {
     id: 2,
     arrivalTime: 1,
-    burstTime: 2,
+    burstTime: 4,
     completed: 0,
     color: "#10B981",
     startTime: null,
