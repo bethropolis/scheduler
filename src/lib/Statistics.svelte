@@ -39,7 +39,7 @@
 		</div>
 	</div>
 	<!-- add a small italisised note showing that the simulation is measured in seconds -->
-	<p class="text-sm text-red-500 mb-4">* All times are measured in seconds</p>
+	<p class="text-sm text-red-500 mb-4">* there might be some slight time error due to rendering.</p>
 </div>
 
 <style>

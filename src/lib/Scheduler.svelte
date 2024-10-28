@@ -36,96 +36,98 @@
 	let lastUpdateRef = Date.now();
 	let currentProcess = $state(null);
 
-
-
-    let executionTime = $derived(() => {
-        return processes.reduce((max, p) => {
+	let executionTime = $derived(() => {
+		return processes.reduce((max, p) => {
 			return max + p.burstTime;
 		}, 0);
-    });
+	});
 
 	// Reactive statement to update maxTime based on processes
 	let maxTime = $derived(() => {
 		return Math.max(20, Math.ceil(executionTime() / 5) * 5);
 	});
 
-	// Calculate metrics for completed processes
-	function calculateMetrics() {
+	async function calculateMetrics() {
 		let totalWaitTime = 0;
 		let totalTurnaroundTime = 0;
 		let totalResponseTime = 0;
 		let completed = 0;
 
-		processes.forEach((process) => {
+		await processes.forEach((process) => {
 			if (process.completed === process.burstTime) {
 				completed++;
-				// Wait time is the time between arrival and first execution
-				const waitTime = process.startTime - process.arrivalTime;
-				// Turnaround time is the time between arrival and completion
-				const turnaroundTime = process.startTime + process.burstTime - process.arrivalTime;
-				// Response time is the time between arrival and first response
-				const responseTime = process.startTime - process.arrivalTime;
 
-				totalWaitTime += Math.max(0, waitTime);
-				totalTurnaroundTime += Math.max(0, turnaroundTime);
-				totalResponseTime += Math.max(0, responseTime);
+				// Calculate accurate times
+				const waitTime = parseFloat((process.startTime - process.arrivalTime).toFixed(4));
+				const completionTime = parseFloat((process.startTime + process.burstTime).toFixed(4));
+				const turnaroundTime = parseFloat((completionTime - process.arrivalTime).toFixed(4));
+				const responseTime = parseFloat((process.startTime - process.arrivalTime).toFixed(4));
+	
+
+				// Accumulate totals
+				totalWaitTime += waitTime;
+				totalTurnaroundTime += turnaroundTime;
+				totalResponseTime += responseTime;
 			}
 		});
 
+		// Calculate average metrics
+		const avgWaitTime = completed ? totalWaitTime / completed : 0;
+		const avgTurnaroundTime = completed ? totalTurnaroundTime / completed : 0;
+		const avgResponseTime = completed ? totalResponseTime / completed : 0;
+
+		// Round to two decimal places
 		results = {
-			avgWaitTime: completed ? (totalWaitTime / completed).toFixed(2) : 0,
-			avgTurnaroundTime: completed ? (totalTurnaroundTime / completed).toFixed(2) : 0,
-			avgResponseTime: completed ? (totalResponseTime / completed).toFixed(2) : 0,
+			avgWaitTime: avgWaitTime.toFixed(2),
+			avgTurnaroundTime: avgTurnaroundTime.toFixed(2),
+			avgResponseTime: avgResponseTime.toFixed(2),
 			completedJobs: completed
 		};
 	}
 
-    // Animation loop for the simulation
-    async function animate() {
-        const now = Date.now();
-        const deltaTime = (now - lastUpdateRef) / 1000;
-        lastUpdateRef = now;
+	// Animation loop for the simulation
+	async function animate() {
+		const now = Date.now();
+		const deltaTime = Math.floor(now - lastUpdateRef) / 1000; 
+		lastUpdateRef = now;
 
-        currentTime = Math.min(currentTime + deltaTime, maxTime());
 
-        // Update only the currently running process
-        if (currentProcess) {
-            const processIndex = processes.findIndex((p) => p.id === currentProcess.id);
+		currentTime = Math.min(currentTime + deltaTime, maxTime());
+		// Update only the currently running process
+		if (currentProcess) {
+			const processIndex = processes.findIndex((p) => p.id === currentProcess.id);
 
-            if (processIndex !== -1) {
-                const process = processes[processIndex];
+			if (processIndex !== -1) {
+				const process = processes[processIndex];
 
-                // Set start time if this is the first time process is running
-                if (process.startTime === null) {
-                    process.startTime = currentTime;
-                }
+				// Set start time if this is the first time process is running
+				if (process.startTime === null) {
+					process.startTime = currentTime;
+				}
 
-                // Update only the running process's completion
-                process.completed = Math.min(
-                    process.completed + deltaTime,
-                    process.burstTime
-                );
+				// Update only the running process's completion
+				process.completed = Math.min(process.completed + deltaTime, process.burstTime);
 
-                // Check if the process has completed
-                if (process.completed === process.burstTime) {
-                    currentProcess = null;
-                }
-            }
-        }
+				// Check if the process has completed
+				if (process.completed === process.burstTime) {
+					currentProcess = null;
+				}
+			}
+		}
 
-        // If no current process, get the next process
-        if (!currentProcess) {
-            currentProcess = getNextProcess(currentTime);
-        }
+		// If no current process, get the next process
+		if (!currentProcess) {
+			currentProcess = await getNextProcess(currentTime);
+		}
 
-        await calculateMetrics();
+		await calculateMetrics();
 
-        if (currentTime <= maxTime() && isRunning) {
-            animationFrameRef = requestAnimationFrame(animate);
-        } else {
-            isRunning = false;
-        }
-    }
+		if (currentTime <= maxTime() && isRunning) {
+			animationFrameRef = requestAnimationFrame(animate);
+		} else {
+			isRunning = false;
+		}
+	}
 
 	// Start or pause the simulation
 	function startSimulation() {
@@ -150,7 +152,7 @@
 		});
 
 		results = { avgWaitTime: 0, avgTurnaroundTime: 0, completedJobs: 0 };
-        await updateReset(false);
+		await updateReset(false);
 	}
 
 	function updateReset(type = false) {
@@ -271,7 +273,7 @@
 
 			<Statistics {results} executionTime={executionTime()} />
 
-            <Table {processes}/>
+			<Table {processes} />
 		</div>
 	</div>
 </div>
