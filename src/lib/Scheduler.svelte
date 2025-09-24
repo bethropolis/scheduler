@@ -2,16 +2,7 @@
 	import ProcessInput from './ProcessInput.svelte';
 	import Statistics from './Statistics.svelte';
 	import VisualizationBar from './VisualizationBar.svelte';
-	import {
-		processes,
-		addProcess,
-		getCurrentProcess,
-		removeProcess,
-		updateProcess,
-		getAlgorithm,
-		updateAlgorithm,
-		getNextProcess
-	} from './js/initial.svelte.js';
+	import { simulator } from './js/simulator.svelte.js';
 
 	import LucidePlay from '~icons/lucide/play';
 	import LucidePause from '~icons/lucide/pause';
@@ -20,153 +11,53 @@
 	import Header from './header.svelte';
 	import Table from './table.svelte';
 
-	// Reactive state variables using $state
 	let isRunning = $state(false);
-	let currentTime = $state(0);
-	let isReset = $state(false);
-	let results = $state({
-		avgWaitTime: 0,
-		avgTurnaroundTime: 0,
-		completedJobs: 0
-	});
-
-	let algorithm = $derived(getAlgorithm());
-
 	let animationFrameRef;
-	let lastUpdateRef = Date.now();
-	let currentProcess = $state(null);
 
-	let executionTime = $derived(() => {
-		return processes.reduce((max, p) => {
+	const executionTime = $derived(() => {
+		return simulator.processes.reduce((max, p) => {
 			return max + p.burstTime;
 		}, 0);
 	});
 
-	// Reactive statement to update maxTime based on processes
-	let maxTime = $derived(() => {
-		return Math.max(20, Math.ceil(executionTime() / 5) * 5);
+	const maxTime = $derived(() => {
+		return Math.max(20, Math.ceil(executionTime / 5) * 5);
 	});
 
-	async function calculateMetrics() {
-		let totalWaitTime = 0;
-		let totalTurnaroundTime = 0;
-		let totalResponseTime = 0;
-		let completed = 0;
+	function animate() {
+		simulator.tick();
 
-		await processes.forEach((process) => {
-			if (process.completed === process.burstTime) {
-				completed++;
-
-				// Calculate accurate times
-				const waitTime = parseFloat((process.startTime - process.arrivalTime).toFixed(4));
-				const completionTime = parseFloat((process.startTime + process.burstTime).toFixed(4));
-				const turnaroundTime = parseFloat((completionTime - process.arrivalTime).toFixed(4));
-				const responseTime = parseFloat((process.startTime - process.arrivalTime).toFixed(4));
-	
-
-				// Accumulate totals
-				totalWaitTime += waitTime;
-				totalTurnaroundTime += turnaroundTime;
-				totalResponseTime += responseTime;
-			}
-		});
-
-		// Calculate average metrics
-		const avgWaitTime = completed ? totalWaitTime / completed : 0;
-		const avgTurnaroundTime = completed ? totalTurnaroundTime / completed : 0;
-		const avgResponseTime = completed ? totalResponseTime / completed : 0;
-
-		// Round to two decimal places
-		results = {
-			avgWaitTime: avgWaitTime.toFixed(2),
-			avgTurnaroundTime: avgTurnaroundTime.toFixed(2),
-			avgResponseTime: avgResponseTime.toFixed(2),
-			completedJobs: completed
-		};
-	}
-
-	// Animation loop for the simulation
-	async function animate() {
-		const now = Date.now();
-		const deltaTime = Math.floor(now - lastUpdateRef) / 1000; 
-		lastUpdateRef = now;
-
-
-		currentTime = Math.min(currentTime + deltaTime, maxTime());
-		// Update only the currently running process
-		if (currentProcess) {
-			const processIndex = processes.findIndex((p) => p.id === currentProcess.id);
-
-			if (processIndex !== -1) {
-				const process = processes[processIndex];
-
-				// Set start time if this is the first time process is running
-				if (process.startTime === null) {
-					process.startTime = currentTime;
-				}
-
-				// Update only the running process's completion
-				process.completed = Math.min(process.completed + deltaTime, process.burstTime);
-
-				// Check if the process has completed
-				if (process.completed === process.burstTime) {
-					currentProcess = null;
-				}
-			}
-		}
-
-		// If no current process, get the next process
-		if (!currentProcess) {
-			currentProcess = await getNextProcess(currentTime);
-		}
-
-		await calculateMetrics();
-
-		if (currentTime <= maxTime() && isRunning) {
-			animationFrameRef = requestAnimationFrame(animate);
-		} else {
+		if (simulator.currentTime >= maxTime) {
 			isRunning = false;
 		}
+
+		if (isRunning) {
+			animationFrameRef = requestAnimationFrame(animate);
+		}
 	}
 
-	// Start or pause the simulation
 	function startSimulation() {
-		if (!isRunning) {
-			lastUpdateRef = Date.now();
+		isRunning = !isRunning;
+		if (isRunning) {
 			animationFrameRef = requestAnimationFrame(animate);
 		} else {
 			cancelAnimationFrame(animationFrameRef);
 		}
-		isRunning = !isRunning;
 	}
 
-	// Reset the simulation
-	async function resetSimulation() {
-		await updateReset(true);
+	function resetSimulation() {
 		isRunning = false;
-		currentTime = 0;
-		currentProcess = null;
-		await processes.forEach((p) => {
-			p.completed = 0;
-			p.startTime = null;
-		});
-
-		results = { avgWaitTime: 0, avgTurnaroundTime: 0, completedJobs: 0 };
-		await updateReset(false);
+		cancelAnimationFrame(animationFrameRef);
+		simulator.reset();
 	}
 
-	function updateReset(type = false) {
-		isReset = type;
-	}
-
-	// Get execution blocks for visualization
-	function getExecutionBlocks() {
+    function getExecutionBlocks() {
 		const blocks = [];
 		let currentBlock = null;
 		const timeSlice = 0.1;
 
-		for (let time = 0; time <= currentTime; time += timeSlice) {
-			const activeProcess = getCurrentProcess(time);
+		for (let time = 0; time <= simulator.currentTime; time += timeSlice) {
+			const activeProcess = simulator.getNextProcess(time);
 
 			if (activeProcess) {
 				if (!currentBlock || currentBlock.processId !== activeProcess.id) {
@@ -177,7 +68,7 @@
 						processId: activeProcess.id,
 						start: time,
 						end: time + timeSlice,
-						color: processes.find((p) => p.id === activeProcess.id).color
+						color: simulator.processes.find((p) => p.id === activeProcess.id)?.color
 					};
 				} else {
 					currentBlock.end = time + timeSlice;
@@ -193,7 +84,8 @@
 		}
 
 		return blocks;
-	}
+    }
+
 </script>
 
 <div class="w-full flex justify-center space-y-4">
@@ -202,46 +94,32 @@
 		<div class="card-body p-0 md:p-8">
 			<div class="flex gap-4 mb-4">
 				<button
-					class={`px-4 py-2 rounded transition-colors ${algorithm === 'FCFS' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-					onclick={() => updateAlgorithm('FCFS')}
+					class={`px-4 py-2 rounded transition-colors ${simulator.algorithm === 'FCFS' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+					onclick={() => simulator.setAlgorithm('FCFS')}
 				>
 					First Come First Served
 				</button>
 				<button
-					class={`px-4 py-2 rounded transition-colors ${algorithm === 'SJF' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-					onclick={() => updateAlgorithm('SJF')}
+					class={`px-4 py-2 rounded transition-colors ${simulator.algorithm === 'SJF' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+					onclick={() => simulator.setAlgorithm('SJF')}
 				>
 					Shortest Job First
 				</button>
-				<!-- <button
-                    class={`px-4 py-2 disabled rounded transition-colors ${algorithm === 'RR' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                    onclick={() => updateAlgorithm('RR')}
-                    disabled
-                >
-                    Round Robin
-                </button>
-                <button
-                    class={`px-4 disabled py-2 rounded transition-colors ${algorithm === 'Priority' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                    onclick={() => updateAlgorithm('Priority')}
-                    disabled
-                >
-                    Priority Scheduling
-                </button> -->
 			</div>
-			{#each processes as process, index (process.id)}
+			{#each simulator.processes as process, index (process.id)}
 				<ProcessInput
-					process={processes[index]}
-					onRemove={() => removeProcess(process.id)}
-					onUpdate={(field, value) => updateProcess(index, field, value)}
-					{isRunning}
-					{currentTime}
-					bind:isReset
+					process={simulator.processes[index]}
+					onRemove={() => simulator.removeProcess(process.id)}
+					onUpdate={(field, value) => simulator.updateProcess(index, field, value)}
+					isRunning={isRunning}
+					currentTime={simulator.currentTime}
+					currentProcess={simulator.currentProcess}
 				/>
 			{/each}
 
 			<div class="flex gap-2">
 				<button
-					onclick={addProcess}
+					onclick={() => simulator.addProcess()}
 					class="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
 					disabled={isRunning}
 				>
@@ -269,11 +147,11 @@
 				</button>
 			</div>
 
-			<VisualizationBar {currentTime} maxTime={maxTime()} {getExecutionBlocks} />
+			<VisualizationBar currentTime={simulator.currentTime} maxTime={maxTime} {getExecutionBlocks} />
 
-			<Statistics {results} executionTime={executionTime()} />
+			<Statistics results={simulator.results} executionTime={executionTime} />
 
-			<Table {processes} />
+			<Table processes={simulator.processes} algorithm={simulator.algorithm} />
 		</div>
 	</div>
 </div>

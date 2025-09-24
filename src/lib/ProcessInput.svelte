@@ -1,7 +1,5 @@
 <script>
-	import { getCurrentProcess, processes } from './js/initial.svelte.js';
-
-	let { process, onRemove, onUpdate, isRunning, isReset = $bindable(), currentTime } = $props();
+	let { process, onRemove, onUpdate, isRunning, isReset = $bindable(), currentTime, currentProcess } = $props();
 
 	let progress = $state(0);
 	let isCurrentProcess = $state(false);
@@ -17,11 +15,9 @@
 	$effect(() => {
 		if (!isRunning) return;
 
-		if (processes) {
-			isCurrentProcess = checkIfCurrentProcess();
-			if (isCurrentProcess && !isReset) {
-				progress = getProgress();
-			}
+		isCurrentProcess = checkIfCurrentProcess();
+		if (isCurrentProcess && !isReset) {
+			progress = getProgress();
 		}
 
 		function getProgress() {
@@ -30,7 +26,6 @@
 		}
 
 		function checkIfCurrentProcess() {
-			const currentProcess = getCurrentProcess(currentTime);
 			return currentProcess && currentProcess.id === process.id;
 		}
 	});

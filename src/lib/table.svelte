@@ -1,9 +1,6 @@
 <script>
-	import { getAlgorithm } from './js/initial.svelte.js';
+	let { processes, algorithm } = $props();
 
-	let { processes } = $props();
-
-	let algorithm = $derived(getAlgorithm());
 	let order = $state([]);
 
     function updateOrder() {

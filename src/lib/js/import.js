@@ -1,4 +1,4 @@
-import { replaceProcesses } from "./initial.svelte.js";
+import { simulator } from "./simulator.svelte.js";
 
 export function importProcesses(file) {
     const reader = new FileReader();
@@ -6,8 +6,7 @@ export function importProcesses(file) {
         const content = event.target.result;
         try {
             const parsedContent = JSON.parse(content);
-
-            replaceProcesses(parsedContent);
+            simulator.replaceProcesses(parsedContent);
         } catch (error) {
             console.error("Error parsing JSON:", error);
         }
