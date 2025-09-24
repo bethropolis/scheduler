@@ -1,14 +1,21 @@
 <script>
-	let { currentTime, maxTime = $bindable(), getExecutionBlocks } = $props();
+	const { currentTime, maxTime = $bindable(), getExecutionBlocks } = $props();
 
 	// Generate the scale based on intervals of 5
-	let  scaleIntervals = $derived(() => {
-    let intervals = [];
-    for (let i = 0; i <= maxTime; i += 5) {
-      intervals.push(i);
-    }
-    return intervals;
-  });
+	const scaleIntervals = $derived(() => {
+		const intervals = [];
+		for (let i = 0; i <= maxTime(); i += 5) {
+			intervals.push(i);
+		}
+		return intervals;
+	});
+
+	$effect(() => {
+		console.log('Max:', maxTime);
+		console.log('Max time:', maxTime());
+
+		console.log(scaleIntervals());
+	});
 </script>
 
 <div class="flex flex-col">
@@ -16,20 +23,20 @@
 		{#each getExecutionBlocks() as block}
 			<div
 				class="process-bar flex items-center justify-center"
-				style="left: {(block.start / maxTime) * 100}%; width: {((block.end - block.start) /
-					maxTime) *
+				style="left: {(block.start / maxTime()) * 100}%; width: {((block.end - block.start) /
+					maxTime()) *
 					100}%; background-color: {block.color};"
 			>
 				P{block.processId}
 			</div>
 		{/each}
-		<div class="current-time-marker" style="left: {(currentTime / maxTime) * 100}%;"></div>
+		<div class="current-time-marker" style="left: {(currentTime / maxTime()) * 100}%;"></div>
 	</div>
 
 	<!-- Time Scale -->
 	<div class="time-scale">
 		{#each scaleIntervals() as interval}
-			<div class="scale-marker" style="left: {(interval / maxTime) * 100}%;">
+			<div class="scale-marker" style="left: {(interval / maxTime()) * 100}%;">
 				{interval}
 			</div>
 		{/each}

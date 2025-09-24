@@ -1,15 +1,14 @@
 <script>
-	import ProcessInput from './ProcessInput.svelte';
-	import Statistics from './Statistics.svelte';
-	import VisualizationBar from './VisualizationBar.svelte';
-	import { simulator } from './js/simulator.svelte.js';
-
-	import LucidePlay from '~icons/lucide/play';
 	import LucidePause from '~icons/lucide/pause';
+	import LucidePlay from '~icons/lucide/play';
 	import LucidePlusCircle from '~icons/lucide/plus-circle';
 	import LucideUndo from '~icons/lucide/undo';
 	import Header from './header.svelte';
+	import { simulator } from './js/simulator.svelte.js';
+	import ProcessInput from './ProcessInput.svelte';
+	import Statistics from './Statistics.svelte';
 	import Table from './table.svelte';
+	import VisualizationBar from './VisualizationBar.svelte';
 
 	let isRunning = $state(false);
 	let animationFrameRef;
@@ -21,7 +20,7 @@
 	});
 
 	const maxTime = $derived(() => {
-		return Math.max(20, Math.ceil(executionTime / 5) * 5);
+		return Math.max(20, Math.ceil(executionTime() / 5) * 5);
 	});
 
 	function animate() {
@@ -51,7 +50,7 @@
 		simulator.reset();
 	}
 
-    function getExecutionBlocks() {
+	function getExecutionBlocks() {
 		const blocks = [];
 		let currentBlock = null;
 		const timeSlice = 0.1;
@@ -84,8 +83,7 @@
 		}
 
 		return blocks;
-    }
-
+	}
 </script>
 
 <div class="w-full flex justify-center space-y-4">
@@ -111,7 +109,7 @@
 					process={simulator.processes[index]}
 					onRemove={() => simulator.removeProcess(process.id)}
 					onUpdate={(field, value) => simulator.updateProcess(index, field, value)}
-					isRunning={isRunning}
+					{isRunning}
 					currentTime={simulator.currentTime}
 					currentProcess={simulator.currentProcess}
 				/>
@@ -147,9 +145,9 @@
 				</button>
 			</div>
 
-			<VisualizationBar currentTime={simulator.currentTime} maxTime={maxTime} {getExecutionBlocks} />
+			<VisualizationBar currentTime={simulator.currentTime} {maxTime} {getExecutionBlocks} />
 
-			<Statistics results={simulator.results} executionTime={executionTime} />
+			<Statistics results={simulator.results} {executionTime} />
 
 			<Table processes={simulator.processes} algorithm={simulator.algorithm} />
 		</div>
