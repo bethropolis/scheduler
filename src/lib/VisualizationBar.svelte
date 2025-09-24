@@ -9,13 +9,6 @@
 		}
 		return intervals;
 	});
-
-	$effect(() => {
-		console.log('Max:', maxTime);
-		console.log('Max time:', maxTime());
-
-		console.log(scaleIntervals());
-	});
 </script>
 
 <div class="flex flex-col">
