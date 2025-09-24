@@ -1,5 +1,13 @@
 <script>
-	let { process, onRemove, onUpdate, isRunning, isReset = $bindable(), currentTime, currentProcess } = $props();
+	const {
+		process,
+		onRemove,
+		onUpdate,
+		isRunning,
+		isReset = $bindable(),
+		currentTime,
+		currentProcess
+	} = $props();
 
 	let progress = $state(0);
 	let isCurrentProcess = $state(false);
@@ -46,7 +54,7 @@
 		<label class="mr-2" for="arrivalTime-{process.id}">Arrival:</label>
 		<input
 			id="arrivalTime-{process.id}"
-			class="w-16 p-1 border rounded"
+			class="w-16 p-1 border border-gray-200 rounded"
 			type="number"
 			min="0"
 			value={process.arrivalTime}
@@ -58,7 +66,7 @@
 		<label className="mr-2">Burst:</label>
 		<input
 			id="burstTime-{process.id}"
-			class="w-16 p-1 border rounded"
+			class="w-16 p-1 border border-gray-200 rounded"
 			type="number"
 			min="1"
 			value={process.burstTime}
